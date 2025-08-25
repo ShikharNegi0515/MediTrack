@@ -21,39 +21,51 @@ function MedicationHistory() {
                     id,
                     ...med,
                 }));
-                setMedications(
-                    loadedMeds.sort((a, b) => new Date(b.time) - new Date(a.time))
-                );
+
+                // ✅ Ensure each med has a valid date
+                loadedMeds.forEach((med) => {
+                    if (!med.date) {
+                        med.date = new Date().toLocaleDateString();
+                    }
+                });
+
+                // ✅ Sort by date + time
+                loadedMeds.sort((a, b) => {
+                    const dateA = new Date(`${a.date} ${a.time}`);
+                    const dateB = new Date(`${b.date} ${b.time}`);
+                    return dateB - dateA;
+                });
+
+                setMedications(loadedMeds);
             }
         } catch (error) {
             console.error("Error fetching medications:", error);
         }
     };
 
-    // Filter and group by date
-    const groupedByDate = filteredMeds()
-        .reduce((acc, med) => {
-            const dateKey = med.date || new Date().toLocaleDateString();
-            if (!acc[dateKey]) acc[dateKey] = [];
-            acc[dateKey].push(med);
-            return acc;
-        }, {});
+    function filteredMeds() {
+        return medications.filter(
+            (med) =>
+                (filter.status === "" || med.status === filter.status) &&
+                (filter.name === "" ||
+                    med.name.toLowerCase().includes(filter.name.toLowerCase()))
+        );
+    }
+
+    // ✅ Group by Date
+    const groupedByDate = filteredMeds().reduce((acc, med) => {
+        if (!acc[med.date]) acc[med.date] = [];
+        acc[med.date].push(med);
+        return acc;
+    }, {});
 
     function toggleDate(date) {
         setExpandedDates((prev) => ({ ...prev, [date]: !prev[date] }));
     }
 
-    function filteredMeds() {
-        return medications.filter(
-            (med) =>
-                (filter.status === "" || med.status === filter.status) &&
-                (filter.name === "" || med.name.toLowerCase().includes(filter.name.toLowerCase()))
-        );
-    }
-
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
-            <h2 className="text-2xl font-bold mb-4">Medication History</h2>
+            <h2 className="text-2xl font-bold mb-4">📜 Medication History</h2>
 
             {/* Filters */}
             <div className="flex gap-4 mb-6 flex-wrap">
@@ -101,12 +113,17 @@ function MedicationHistory() {
                                             }`}
                                     >
                                         <div>
-                                            <p className="font-semibold text-lg capitalize">{med.name}</p>
+                                            <p className="font-semibold text-lg capitalize">
+                                                {med.name}
+                                            </p>
                                             <p className="text-gray-600 text-sm">
                                                 <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-md text-xs font-medium">
                                                     {med.dose} pill{med.dose > 1 ? "s" : ""}
                                                 </span>{" "}
-                                                at <span className="font-medium text-gray-800">{med.time}</span>
+                                                at{" "}
+                                                <span className="font-medium text-gray-800">
+                                                    {med.time}
+                                                </span>
                                             </p>
                                         </div>
                                         <span

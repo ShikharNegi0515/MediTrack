@@ -1,4 +1,3 @@
-// src/pages/Reminders.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { auth, db, onAuthReady } from "../firebase/firebase";
 import {
@@ -12,16 +11,12 @@ import {
     where,
 } from "firebase/firestore";
 
-/**
- * Helper to schedule a local browser notification at a given Date
- * Returns a cleanup function to clear the timer.
- */
+
 function scheduleLocalNotification({ title, body, when }) {
     if (!("Notification" in window)) return () => { };
 
     const delay = when.getTime() - Date.now();
     if (delay <= 0) {
-        // If time is in the past, show immediately
         try {
             new Notification(title, { body, icon: "/icon.png" });
         } catch { }
@@ -37,14 +32,11 @@ function scheduleLocalNotification({ title, body, when }) {
     return () => clearTimeout(timerId);
 }
 
-/** Parse value from <input type="datetime-local"> to Date in local time */
 function parseLocalDateTime(value) {
-    // "2025-08-23T20:45"
     if (!value) return null;
     const [date, time] = value.split("T");
     const [y, m, d] = date.split("-").map(Number);
     const [hh, mm] = time.split(":").map(Number);
-    // new Date(year, monthIndex, day, hours, minutes)
     return new Date(y, m - 1, d, hh, mm, 0, 0);
 }
 
@@ -53,9 +45,8 @@ export default function Reminders() {
     const [dateTime, setDateTime] = useState("");
     const [reminders, setReminders] = useState([]);
     const [loading, setLoading] = useState(true);
-    const timersRef = useRef({}); // { reminderId: clearFn }
+    const timersRef = useRef({}); 
 
-    // Listen for this user's reminders in Firestore (real-time)
     useEffect(() => {
         let unsubscribe = () => { };
         let mounted = true;
@@ -93,20 +84,17 @@ export default function Reminders() {
         return () => {
             mounted = false;
             unsubscribe();
-            // cleanup any timers on unmount
             Object.values(timersRef.current).forEach((clearFn) => clearFn?.());
             timersRef.current = {};
         };
     }, []);
 
-    // Whenever reminders change, (re)schedule local notifications
     useEffect(() => {
-        // Clear previous timers
         Object.values(timersRef.current).forEach((clearFn) => clearFn?.());
         timersRef.current = {};
 
         reminders.forEach((r) => {
-            const when = new Date(r.time); // stored as ISO string
+            const when = new Date(r.time);
             const clearFn = scheduleLocalNotification({
                 title: "Medication Reminder",
                 body: `Time to take ${r.medication}`,
@@ -129,7 +117,6 @@ export default function Reminders() {
         const when = parseLocalDateTime(dateTime);
         if (!when) return;
 
-        // Save as ISO (UTC) string for consistency
         await addDoc(collection(db, "reminders"), {
             userId: user.uid,
             medication: medication.trim(),

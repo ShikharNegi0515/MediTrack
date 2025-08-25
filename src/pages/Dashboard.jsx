@@ -95,13 +95,6 @@ export default function Dashboard() {
                             >
                                 Profile
                             </Link>
-                            <Link
-                                to="settings"
-                                className="block px-4 py-2 hover:bg-gray-100 transition"
-                                onClick={() => setMenuOpen(false)}
-                            >
-                                Settings
-                            </Link>
                             <button
                                 onClick={handleLogout}
                                 className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"

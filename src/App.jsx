@@ -10,20 +10,16 @@ import Reports from "./pages/Reports";
 import MedicationHistory from "./pages/MedicationHistory";
 import Profile from "./pages/Profile";
 import ChatWidget from "./pages/ChatWidget";
-import DashboardHome from "./pages/DashboardHome";
 
 
 function App() {
   return (
     <>
       <Routes>
-        {/* Auth */}
         <Route path="/" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
-        {/* Dashboard */}
         <Route path="/dashboard" element={<Dashboard />}>
-          {/* When someone visits /dashboard, go directly to Medications */}
           <Route index element={<Medications />} />
 
           <Route path="medications" element={<Medications />} />

@@ -1,40 +1,53 @@
-import { useEffect, useState } from "react";
-import { Bar, Pie } from "react-chartjs-2";
+import React, { useEffect, useState } from "react";
+import { Pie } from "react-chartjs-2";
 import {
     Chart as ChartJS,
     Title,
     Tooltip,
     Legend,
     ArcElement,
-    BarElement,
-    CategoryScale,
-    LinearScale,
 } from "chart.js";
+import axios from "axios";
+import { auth } from "../firebase/firebase";
 
-ChartJS.register(Title, Tooltip, Legend, ArcElement, BarElement, CategoryScale, LinearScale);
+const FIREBASE_URL =
+    "https://meditrack-a9867-default-rtdb.asia-southeast1.firebasedatabase.app/medications";
+
+ChartJS.register(Title, Tooltip, Legend, ArcElement);
 
 function Reports() {
     const [reportData, setReportData] = useState({ taken: 0, missed: 0 });
-    const [history, setHistory] = useState([]);
 
     useEffect(() => {
-        // TODO: Replace with actual Firebase fetch of reminder history
-        const dummyHistory = [
-            { date: "2025-08-20", taken: true },
-            { date: "2025-08-21", taken: false },
-            { date: "2025-08-22", taken: true },
-            { date: "2025-08-23", taken: true },
-            { date: "2025-08-24", taken: false },
-        ];
-        setHistory(dummyHistory);
+        const fetchData = async () => {
+            if (!auth.currentUser) return;
 
-        const taken = dummyHistory.filter((h) => h.taken).length;
-        const missed = dummyHistory.length - taken;
+            try {
+                const res = await axios.get(`${FIREBASE_URL}.json`);
+                if (!res.data) return;
 
-        setReportData({ taken, missed });
+                const userMeds = Object.values(res.data).filter(
+                    (m) => m.userId === auth.currentUser.uid
+                );
+
+                // Sum counters
+                let totalTaken = 0;
+                let totalMissed = 0;
+                userMeds.forEach((m) => {
+                    const c = m.counters || { taken: 0, missed: 0 };
+                    totalTaken += c.taken;
+                    totalMissed += c.missed;
+                });
+
+                setReportData({ taken: totalTaken, missed: totalMissed });
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        fetchData();
     }, []);
 
-    // Pie chart for overall adherence
     const pieData = {
         labels: ["Taken", "Missed"],
         datasets: [
@@ -45,33 +58,18 @@ function Reports() {
         ],
     };
 
-    // Bar chart for daily history
-    const barData = {
-        labels: history.map((h) => h.date),
-        datasets: [
-            {
-                label: "Taken (1=Yes, 0=No)",
-                data: history.map((h) => (h.taken ? 1 : 0)),
-                backgroundColor: "#2196F3",
-            },
-        ],
-    };
-
     return (
         <div className="p-6">
             <h2 className="text-2xl font-bold mb-4">Medication Reports</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-4 bg-white shadow rounded">
-                    <h3 className="text-lg font-semibold mb-2">Overall Adherence</h3>
-                    <Pie data={pieData} />
+            {reportData.taken + reportData.missed > 0 ? (
+                <div className="flex justify-center">
+                    <div style={{ width: "300px", height: "300px" }}>
+                        <Pie data={pieData} />
+                    </div>
                 </div>
-
-                <div className="p-4 bg-white shadow rounded">
-                    <h3 className="text-lg font-semibold mb-2">Daily History</h3>
-                    <Bar data={barData} />
-                </div>
-            </div>
+            ) : (
+                <p>No data available</p>
+            )}
         </div>
     );
 }
