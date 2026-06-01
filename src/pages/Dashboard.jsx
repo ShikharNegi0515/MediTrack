@@ -1,115 +1,149 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
-import { FaUserCircle } from "react-icons/fa";
+import { FaUserCircle, FaBars, FaTimes } from "react-icons/fa";
 import {
-    requestNotificationPermission,
-    subscribeToForegroundMessages,
+  requestNotificationPermission,
+  subscribeToForegroundMessages,
+  auth,
 } from "../firebase/firebase";
+import { logout } from "../firebase/auth";
+
+const navLinks = [
+  { to: "/dashboard", label: "Home", end: true },
+  { to: "/dashboard/medications", label: "Medications" },
+  { to: "/dashboard/reminders", label: "Reminders" },
+  { to: "/dashboard/refill-tracker", label: "Refills" },
+  { to: "/dashboard/reports", label: "Reports" },
+  { to: "/dashboard/history", label: "History" },
+];
+
+function NavLink({ to, label, end, onClick }) {
+  const location = useLocation();
+  const active = end
+    ? location.pathname === to || location.pathname === `${to}/`
+    : location.pathname.startsWith(to);
+
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+        active
+          ? "bg-white/20 text-white shadow-inner"
+          : "text-teal-50 hover:bg-white/10"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
 
 export default function Dashboard() {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const [menuOpen, setMenuOpen] = useState(false);
-    const menuRef = useRef(null);
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileNav, setMobileNav] = useState(false);
+  const menuRef = useRef(null);
+  const displayName =
+    auth.currentUser?.displayName ||
+    auth.currentUser?.email?.split("@")[0] ||
+    "User";
 
-    // 🔔 Setup Notifications
-    useEffect(() => {
-        (async () => {
-            const token = await requestNotificationPermission();
-            if (token) {
-                console.log("FCM Token saved:", token);
-            }
-            subscribeToForegroundMessages();
-        })();
-    }, []);
+  useEffect(() => {
+    (async () => {
+      const token = await requestNotificationPermission();
+      if (token) console.log("FCM Token saved:", token);
+      subscribeToForegroundMessages();
+    })();
+  }, []);
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        function handleClickOutside(event) {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setMenuOpen(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, []);
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-    const handleLogout = () => {
-        localStorage.removeItem("authToken");
-        navigate("/");
-    };
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
 
-    const navLinks = [
-        { to: "medications", label: "Medications" },
-        { to: "reminders", label: "Reminders" },
-        { to: "refill-tracker", label: "Refill Tracker" },
-        { to: "reports", label: "Reports" },
-        { to: "history", label: "History" },
-    ];
+  return (
+    <div className="min-h-screen bg-surface">
+      <nav className="sticky top-0 z-40 border-b border-brand-800/30 bg-gradient-to-r from-brand-800 to-brand-600 text-white shadow-lg">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <Link to="/dashboard" className="shrink-0 text-xl font-extrabold tracking-tight sm:text-2xl">
+            Medi<span className="text-amber-300">Track</span>
+          </Link>
 
-    return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Navbar */}
-            <nav className="bg-indigo-600 text-white px-8 py-4 flex justify-between items-center shadow-lg">
-                {/* Logo */}
-                <h1 className="text-2xl font-extrabold tracking-wide">
-                    Medi<span className="text-yellow-300">Track</span>
-                </h1>
+          <div className="hidden items-center gap-1 lg:flex">
+            {navLinks.map((link) => (
+              <NavLink key={link.to} {...link} />
+            ))}
+          </div>
 
-                {/* Nav Links */}
-                <div className="flex gap-6">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.to}
-                            to={link.to}
-                            className={`px-3 py-2 rounded-md font-medium transition duration-200
-                                ${location.pathname.includes(link.to)
-                                    ? "bg-indigo-800 text-yellow-300 shadow-md"
-                                    : "hover:bg-indigo-500 hover:shadow"
-                                }`}
-                        >
-                            {link.label}
-                        </Link>
-                    ))}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="rounded-lg p-2 hover:bg-white/10 lg:hidden"
+              onClick={() => setMobileNav(!mobileNav)}
+              aria-label="Toggle menu"
+            >
+              {mobileNav ? <FaTimes size={20} /> : <FaBars size={20} />}
+            </button>
+
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-white/10 sm:px-3"
+              >
+                <FaUserCircle className="text-2xl sm:text-3xl" />
+                <span className="hidden max-w-[120px] truncate text-sm font-medium sm:inline">
+                  {displayName}
+                </span>
+              </button>
+
+              {menuOpen && (
+                <div className="animate-fade-in absolute right-0 mt-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-slate-700 shadow-xl">
+                  <div className="border-b border-slate-100 px-4 py-2 text-xs text-slate-500">
+                    {auth.currentUser?.email}
+                  </div>
+                  <Link
+                    to="/dashboard/profile"
+                    className="block px-4 py-2.5 text-sm hover:bg-slate-50"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Profile
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50"
+                  >
+                    Log out
+                  </button>
                 </div>
-
-                {/* User Dropdown */}
-                <div className="relative" ref={menuRef}>
-                    <button
-                        onClick={() => setMenuOpen(!menuOpen)}
-                        className="flex items-center gap-2 focus:outline-none px-3 py-2 rounded-md 
-                                   hover:bg-indigo-500 transition duration-200"
-                    >
-                        <FaUserCircle className="text-3xl transition-transform duration-200 group-hover:scale-110" />
-                        <span className="font-medium">User</span>
-                    </button>
-
-                    {menuOpen && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white text-gray-700 rounded-lg shadow-xl overflow-hidden z-50 animate-fadeIn">
-                            <Link
-                                to="profile"
-                                className="block px-4 py-2 hover:bg-gray-100 transition"
-                                onClick={() => setMenuOpen(false)}
-                            >
-                                Profile
-                            </Link>
-                            <button
-                                onClick={handleLogout}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </nav>
-
-            {/* Main Content Area */}
-            <div className="max-w-6xl mx-auto py-10 px-6">
-                <Outlet />
+              )}
             </div>
+          </div>
         </div>
-    );
+
+        {mobileNav && (
+          <div className="flex flex-wrap gap-1 border-t border-white/10 px-4 py-3 lg:hidden">
+            {navLinks.map((link) => (
+              <NavLink key={link.to} {...link} onClick={() => setMobileNav(false)} />
+            ))}
+          </div>
+        )}
+      </nav>
+
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+        <Outlet />
+      </main>
+    </div>
+  );
 }

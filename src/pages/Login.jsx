@@ -1,80 +1,83 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { login } from "../firebase/auth";
+import { login, friendlyAuthError } from "../firebase/auth";
+import AuthLayout from "../components/AuthLayout";
 
 function Login() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-    const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        try {
-            await login(email, password);
-            navigate("/dashboard");
-        } catch (err) {
-            setError(err.message);
-        }
-    };
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await login(email, password);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(friendlyAuthError(err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-purple-600 via-pink-500 to-red-500">
-            <form
-                onSubmit={handleLogin}
-                className="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-96 space-y-6"
-            >
-                <h2 className="text-3xl font-extrabold text-center text-gray-800">
-                    Welcome Back 👋
-                </h2>
+  return (
+    <AuthLayout title="Welcome back" subtitle="Sign in to manage your medications">
+      <form onSubmit={handleLogin} className="space-y-4">
+        {error && (
+          <p className="rounded-xl bg-red-50 px-4 py-2.5 text-center text-sm text-red-700" role="alert">
+            {error}
+          </p>
+        )}
 
-                {error && (
-                    <p className="text-red-600 text-sm text-center bg-red-100 py-2 px-3 rounded-lg">
-                        {error}
-                    </p>
-                )}
-
-                <div>
-                    <input
-                        type="email"
-                        placeholder="Email address"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        required
-                    />
-                </div>
-
-                <div>
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        required
-                    />
-                </div>
-
-                <button
-                    type="submit"
-                    className="w-full py-3 rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700 transition duration-300"
-                >
-                    Log In
-                </button>
-
-                <p className="text-sm text-center text-gray-600">
-                    Don’t have an account?{" "}
-                    <Link
-                        to="/signup"
-                        className="text-purple-600 font-medium hover:underline"
-                    >
-                        Sign Up
-                    </Link>
-                </p>
-            </form>
+        <div>
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="input-field"
+            required
+          />
         </div>
-    );
+
+        <div>
+          <label htmlFor="password" className="mb-1 block text-sm font-medium text-slate-700">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input-field"
+            required
+          />
+        </div>
+
+        <button type="submit" disabled={loading} className="btn-primary w-full">
+          {loading ? "Signing in..." : "Sign in"}
+        </button>
+
+        <p className="text-center text-sm text-slate-500">
+          Don&apos;t have an account?{" "}
+          <Link to="/signup" className="font-semibold text-brand-600 hover:text-brand-700">
+            Create one
+          </Link>
+        </p>
+      </form>
+    </AuthLayout>
+  );
 }
 
 export default Login;

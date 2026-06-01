@@ -1,13 +1,36 @@
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 # MediTrack
+
+A modern medication management web app built with React, Vite, Tailwind CSS, and Firebase.
+
+## Features
+
+- **Authentication** — Email/password sign up and sign in with protected routes
+- **Medications** — Add prescriptions, log taken/missed doses, track per user
+- **Reminders** — Schedule local notifications via Firestore
+- **Refill tracker** — Monitor pill counts and renewal dates
+- **Reports** — Adherence stats and pie chart visualization
+- **History** — Timeline of logged dose events
+- **Profile** — Per-user health information
+- **Assistant** — In-app chat widget for quick help
+
+## Getting started
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173).
+
+## Build
+
+```bash
+npm run build
+npm run preview
+```
+
+## Tech stack
+
+- React 19 + Vite 7
+- Tailwind CSS 4
+- Firebase Auth, Realtime Database, Firestore, Cloud Messaging

@@ -1,104 +1,151 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
+import { onAuthReady } from "../firebase/firebase";
+import PageHeader from "../components/ui/PageHeader";
+import Card from "../components/ui/Card";
 
-const FIREBASE_URL =
-    "https://meditrack-a9867-default-rtdb.asia-southeast1.firebasedatabase.app/profile.json";
+const FIREBASE_BASE =
+  "https://meditrack-a9867-default-rtdb.asia-southeast1.firebasedatabase.app";
 
 function Profile() {
-    const [profile, setProfile] = useState({
-        name: "",
-        age: "",
-        allergies: "",
-        conditions: "",
-        doctor: "",
-    });
+  const [profile, setProfile] = useState({
+    name: "",
+    age: "",
+    allergies: "",
+    conditions: "",
+    doctor: "",
+  });
+  const [email, setEmail] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [profilePath, setProfilePath] = useState(null);
 
-    // Load Profile
-    useEffect(() => {
-        const fetchProfile = async () => {
-            try {
-                const res = await axios.get(FIREBASE_URL);
-                if (res.data) setProfile(res.data);
-            } catch (err) {
-                console.error("Error fetching profile:", err);
-            }
-        };
-        fetchProfile();
-    }, []);
+  useEffect(() => {
+    (async () => {
+      const user = await onAuthReady();
+      if (!user) return;
 
-    // Save Profile
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            await axios.put(FIREBASE_URL, profile);
-            alert("Profile updated successfully!");
-        } catch (err) {
-            console.error("Error saving profile:", err);
-        }
-    };
+      setEmail(user.email || "");
+      const path = `${FIREBASE_BASE}/profiles/${user.uid}.json`;
+      setProfilePath(path);
 
-    const handleChange = (e) => {
-        setProfile({ ...profile, [e.target.name]: e.target.value });
-    };
+      try {
+        const res = await axios.get(path);
+        if (res.data) setProfile(res.data);
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+      }
+    })();
+  }, []);
 
-    return (
-        <div className="p-6 max-w-lg mx-auto bg-white rounded-xl shadow-lg">
-            <h2 className="text-xl font-bold mb-4 text-indigo-700">User Profile</h2>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!profilePath) return;
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <input
-                    type="text"
-                    name="name"
-                    placeholder="Full Name"
-                    value={profile.name}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                    required
-                />
+    try {
+      await axios.put(profilePath, profile);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error("Error saving profile:", err);
+    }
+  };
 
-                <input
-                    type="number"
-                    name="age"
-                    placeholder="Age"
-                    value={profile.age}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                />
+  const handleChange = (e) => {
+    setProfile({ ...profile, [e.target.name]: e.target.value });
+  };
 
-                <textarea
-                    name="allergies"
-                    placeholder="Allergies (comma separated)"
-                    value={profile.allergies}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                />
+  return (
+    <div className="page-container animate-slide-up">
+      <PageHeader title="Profile" subtitle="Your health information stays private to your account" />
 
-                <textarea
-                    name="conditions"
-                    placeholder="Current Conditions"
-                    value={profile.conditions}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                />
+      <Card className="mx-auto max-w-lg">
+        {email && (
+          <div className="mb-6 rounded-xl bg-brand-50 px-4 py-3 text-sm">
+            <span className="text-slate-500">Account: </span>
+            <span className="font-medium text-brand-800">{email}</span>
+          </div>
+        )}
 
-                <input
-                    type="text"
-                    name="doctor"
-                    placeholder="Doctor Contact Info"
-                    value={profile.doctor}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-600">Full name</label>
+            <input
+              type="text"
+              name="name"
+              placeholder="Jane Doe"
+              value={profile.name}
+              onChange={handleChange}
+              className="input-field"
+              required
+            />
+          </div>
 
-                <button
-                    type="submit"
-                    className="w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700"
-                >
-                    Save Profile
-                </button>
-            </form>
-        </div>
-    );
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-600">Age</label>
+            <input
+              type="number"
+              name="age"
+              min="0"
+              placeholder="30"
+              value={profile.age}
+              onChange={handleChange}
+              className="input-field"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-600">Allergies</label>
+            <textarea
+              name="allergies"
+              placeholder="Penicillin, peanuts..."
+              value={profile.allergies}
+              onChange={handleChange}
+              rows={2}
+              className="input-field resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-600">
+              Current conditions
+            </label>
+            <textarea
+              name="conditions"
+              placeholder="Diabetes, hypertension..."
+              value={profile.conditions}
+              onChange={handleChange}
+              rows={2}
+              className="input-field resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-600">
+              Doctor contact
+            </label>
+            <input
+              type="text"
+              name="doctor"
+              placeholder="Dr. Smith — (555) 123-4567"
+              value={profile.doctor}
+              onChange={handleChange}
+              className="input-field"
+            />
+          </div>
+
+          <button type="submit" className="btn-primary w-full">
+            Save profile
+          </button>
+
+          {saved && (
+            <p className="text-center text-sm font-medium text-emerald-600" role="status">
+              Profile saved successfully
+            </p>
+          )}
+        </form>
+      </Card>
+    </div>
+  );
 }
 
 export default Profile;

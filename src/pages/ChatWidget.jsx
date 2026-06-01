@@ -1,61 +1,133 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { FaComments, FaPaperPlane, FaTimes } from "react-icons/fa";
+
+const FAQ_RESPONSES = [
+  {
+    keywords: ["hello", "hi", "hey"],
+    reply: "Hello! I'm your MediTrack assistant. Ask about medications, reminders, or refills.",
+  },
+  {
+    keywords: ["medicine", "medication", "dose", "pill"],
+    reply: "Go to Medications to add prescriptions and mark doses as taken or missed.",
+  },
+  {
+    keywords: ["remind", "alert", "notification"],
+    reply: "Open Reminders to schedule date/time alerts for your medications.",
+  },
+  {
+    keywords: ["refill", "pharmacy", "renew"],
+    reply: "Use Refill Tracker to monitor pill counts and renewal dates.",
+  },
+  {
+    keywords: ["report", "chart", "adherence"],
+    reply: "Reports shows your taken vs missed doses and adherence percentage.",
+  },
+  {
+    keywords: ["profile", "doctor", "allerg"],
+    reply: "Update your health profile under Profile in the menu.",
+  },
+  {
+    keywords: ["help", "how"],
+    reply: "I can help with medications, reminders, refills, reports, and your profile. What do you need?",
+  },
+];
+
+function getBotReply(message) {
+  const lower = message.toLowerCase();
+  for (const item of FAQ_RESPONSES) {
+    if (item.keywords.some((k) => lower.includes(k))) return item.reply;
+  }
+  return "I'm not sure about that. Try asking about medications, reminders, refills, or reports.";
+}
 
 const ChatWidget = () => {
-    const [open, setOpen] = useState(false);
-    const [messages, setMessages] = useState([]);
-    const [input, setInput] = useState("");
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    {
+      text: "Hi! How can I help you with MediTrack today?",
+      sender: "bot",
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const bottomRef = useRef(null);
 
-    const sendMessage = () => {
-        if (input.trim() === "") return;
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, open]);
 
-        setMessages([...messages, { text: input, sender: "user" }]);
-        const userMessage = input.toLowerCase();
-        setInput("");
+  const sendMessage = (e) => {
+    e?.preventDefault();
+    if (input.trim() === "") return;
 
-        setTimeout(() => {
-            let reply = "Sorry, I didn't understand that.";
-            if (userMessage.includes("hello")) reply = "Hi! How can I help you?";
-            if (userMessage.includes("medicine")) reply = "Please check your medication schedule in the dashboard.";
-            if (userMessage.includes("doctor")) reply = "You can contact your doctor through the support section.";
+    const userText = input.trim();
+    setMessages((prev) => [...prev, { text: userText, sender: "user" }]);
+    setInput("");
 
-            setMessages((prev) => [...prev, { text: reply, sender: "bot" }]);
-        }, 1000);
-    };
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        { text: getBotReply(userText), sender: "bot" },
+      ]);
+    }, 600);
+  };
 
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg shadow-brand-600/30 transition hover:scale-105 hover:bg-brand-700"
+        aria-label={open ? "Close chat" : "Open chat"}
+      >
+        {open ? <FaTimes size={20} /> : <FaComments size={22} />}
+      </button>
 
-    return (
-        <div>
+      {open && (
+        <div className="animate-slide-up fixed bottom-24 right-6 z-50 flex w-[min(100vw-2rem,22rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div className="bg-gradient-to-r from-brand-700 to-brand-600 px-4 py-3 text-white">
+            <p className="font-semibold">MediTrack Assistant</p>
+            <p className="text-xs text-teal-100">Usually replies instantly</p>
+          </div>
+
+          <div className="h-64 overflow-y-auto bg-slate-50 p-3">
+            {messages.map((m, i) => (
+              <div
+                key={i}
+                className={`mb-2 flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <span
+                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                    m.sender === "user"
+                      ? "rounded-br-md bg-brand-600 text-white"
+                      : "rounded-bl-md border border-slate-200 bg-white text-slate-700"
+                  }`}
+                >
+                  {m.text}
+                </span>
+              </div>
+            ))}
+            <div ref={bottomRef} />
+          </div>
+
+          <form onSubmit={sendMessage} className="flex border-t border-slate-200 bg-white">
+            <input
+              className="flex-1 px-4 py-3 text-sm outline-none placeholder:text-slate-400"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask a question..."
+            />
             <button
-                onClick={() => setOpen(!open)}
-                className="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-full shadow-lg"
+              type="submit"
+              className="flex items-center justify-center px-4 text-brand-600 hover:text-brand-700"
+              aria-label="Send"
             >
-                💬
+              <FaPaperPlane />
             </button>
-            {open && (
-                <div className="fixed bottom-16 right-4 w-72 bg-white shadow-lg rounded-lg border">
-                    <div className="p-2 bg-blue-500 text-white rounded-t-lg">Live Chat</div>
-                    <div className="p-2 h-48 overflow-y-auto">
-                        {messages.map((m, i) => (
-                            <div key={i} className={`my-1 ${m.sender === "user" ? "text-right" : "text-left"}`}>
-                                <span className={`px-2 py-1 rounded ${m.sender === "user" ? "bg-blue-100" : "bg-gray-200"}`}>
-                                    {m.text}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="flex border-t">
-                        <input
-                            className="flex-1 p-2 outline-none"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            placeholder="Type a message..."
-                        />
-                        <button onClick={sendMessage} className="px-3 bg-blue-500 text-white">Send</button>
-                    </div>
-                </div>
-            )}
+          </form>
         </div>
-    );
+      )}
+    </>
+  );
 };
 
 export default ChatWidget;

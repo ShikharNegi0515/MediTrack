@@ -1,80 +1,84 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { signup } from "../firebase/auth";
+import { signup, friendlyAuthError } from "../firebase/auth";
+import AuthLayout from "../components/AuthLayout";
 
 function Signup() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-    const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-    const handleSignup = async (e) => {
-        e.preventDefault();
-        try {
-            await signup(email, password);
-            navigate("/dashboard");
-        } catch (err) {
-            setError(err.message);
-        }
-    };
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await signup(email, password);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(friendlyAuthError(err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
-            <form
-                onSubmit={handleSignup}
-                className="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-96 space-y-6"
-            >
-                <h2 className="text-3xl font-extrabold text-center text-gray-800">
-                    Create an Account 🚀
-                </h2>
+  return (
+    <AuthLayout title="Create your account" subtitle="Start tracking medications in minutes">
+      <form onSubmit={handleSignup} className="space-y-4">
+        {error && (
+          <p className="rounded-xl bg-red-50 px-4 py-2.5 text-center text-sm text-red-700" role="alert">
+            {error}
+          </p>
+        )}
 
-                {error && (
-                    <p className="text-red-600 text-sm text-center bg-red-100 py-2 px-3 rounded-lg">
-                        {error}
-                    </p>
-                )}
-
-                <div>
-                    <input
-                        type="email"
-                        placeholder="Email address"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        required
-                    />
-                </div>
-
-                <div>
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        required
-                    />
-                </div>
-
-                <button
-                    type="submit"
-                    className="w-full py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition duration-300"
-                >
-                    Sign Up
-                </button>
-
-                <p className="text-sm text-center text-gray-600">
-                    Already a user?{" "}
-                    <Link
-                        to="/"
-                        className="text-indigo-600 font-medium hover:underline"
-                    >
-                        Log In
-                    </Link>
-                </p>
-            </form>
+        <div>
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="input-field"
+            required
+          />
         </div>
-    );
+
+        <div>
+          <label htmlFor="password" className="mb-1 block text-sm font-medium text-slate-700">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="At least 6 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input-field"
+            minLength={6}
+            required
+          />
+        </div>
+
+        <button type="submit" disabled={loading} className="btn-primary w-full">
+          {loading ? "Creating account..." : "Sign up"}
+        </button>
+
+        <p className="text-center text-sm text-slate-500">
+          Already have an account?{" "}
+          <Link to="/" className="font-semibold text-brand-600 hover:text-brand-700">
+            Sign in
+          </Link>
+        </p>
+      </form>
+    </AuthLayout>
+  );
 }
 
 export default Signup;

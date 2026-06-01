@@ -1,28 +1,32 @@
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "./firebase.js";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 export async function signup(email, password) {
-    try {
-        const userCred = await createUserWithEmailAndPassword(auth, email, password);
-        console.log("User signed up:", userCred.user);
-        return userCred.user;
-    } catch (error) {
-        console.error("Signup error:", error.message);
-        throw error;
-    }
+  const userCred = await createUserWithEmailAndPassword(auth, email, password);
+  return userCred.user;
 }
 
 export async function login(email, password) {
-    try {
-        const userCred = await signInWithEmailAndPassword(auth, email, password);
-        console.log("User logged in:", userCred.user);
-        return userCred.user;
-    } catch (error) {
-        console.error("Login error:", error.message);
-        throw error;
-    }
+  const userCred = await signInWithEmailAndPassword(auth, email, password);
+  return userCred.user;
 }
 
 export async function logout() {
-    await signOut(auth);
+  await signOut(auth);
+}
+
+export function friendlyAuthError(message) {
+  if (message.includes("invalid-credential") || message.includes("wrong-password")) {
+    return "Invalid email or password. Please try again.";
+  }
+  if (message.includes("email-already-in-use")) {
+    return "An account with this email already exists.";
+  }
+  if (message.includes("weak-password")) {
+    return "Password should be at least 6 characters.";
+  }
+  if (message.includes("invalid-email")) {
+    return "Please enter a valid email address.";
+  }
+  return message.replace("Firebase: ", "").replace(/\(auth\/[^)]+\)\.?/g, "").trim();
 }
